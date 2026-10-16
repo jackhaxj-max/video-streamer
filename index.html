@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video Utility Prototype</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+  <script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
+</head>
+<body class="bg-slate-900 text-white min-h-screen flex flex-col items-center justify-center p-4">
+
+  <div class="max-w-xl w-full bg-slate-800 p-6 rounded-xl shadow-lg border border-slate-700">
+    <h1 class="text-2xl font-bold mb-4 text-center">Media Link Extractor</h1>
+
+    <!-- Input Form -->
+    <div class="flex gap-2 mb-6">
+      <input id="linkInput" type="text" placeholder="Paste link here..." 
+             class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500">
+      <button onclick="extractLink()" id="btnText" 
+              class="bg-blue-600 hover:bg-blue-700 font-semibold px-5 py-2 rounded-lg transition">
+        Process
+      </button>
+    </div>
+
+    <!-- Status Output -->
+    <div id="status" class="text-center text-sm text-slate-400 mb-4 hidden"></div>
+
+    <!-- Video Container (Files <= 1GB) -->
+    <div id="playerWrapper" class="hidden mb-4">
+      <video id="player" controls crossorigin playsinline class="w-full rounded-lg"></video>
+    </div>
+
+    <!-- Direct Download Button (Files > 1GB or Override) -->
+    <div id="downloadWrapper" class="hidden text-center">
+      <p class="text-amber-400 text-sm mb-2">File exceeds 1 GB limit. Direct stream disabled.</p>
+      <a id="downloadBtn" href="#" target="_blank" rel="noopener noreferrer" 
+         class="inline-block bg-emerald-600 hover:bg-emerald-700 font-bold px-6 py-3 rounded-lg text-white transition">
+        Download Direct File
+      </a>
+    </div>
+  </div>
+
+  <script>
+    let plyrInstance = null;
+
+    async function extractLink() {
+      const input = document.getElementById('linkInput').value.trim();
+      const status = document.getElementById('status');
+      const playerWrapper = document.getElementById('playerWrapper');
+      const downloadWrapper = document.getElementById('downloadWrapper');
+      const btnText = document.getElementById('btnText');
+
+      if (!input) return alert("Please enter a link!");
+
+      // Reset state
+      status.classList.remove('hidden');
+      status.innerText = "Extracting video stream... Please wait.";
+      playerWrapper.classList.add('hidden');
+      downloadWrapper.classList.add('hidden');
+      btnText.innerText = "Loading...";
+
+      try {
+        const response = await fetch(`/api/parse?url=${encodeURIComponent(input)}`);
+        const data = await response.json();
+
+        btnText.innerText = "Process";
+
+        if (!data.success || !data.streamUrl) {
+          status.innerText = "Error: " + (data.error || "Unable to extract stream URL.");
+          return;
+        }
+
+        status.innerText = `Success! Detected size: ${data.sizeInMB ? data.sizeInMB + ' MB' : 'Unknown'}`;
+
+        if (data.isLargeFile) {
+          // File > 1 GB: Show download button
+          downloadWrapper.classList.remove('hidden');
+          document.getElementById('downloadBtn').href = data.streamUrl;
+        } else {
+          // File <= 1 GB: Load into HTML5 Player
+          playerWrapper.classList.remove('hidden');
+          const videoElement = document.getElementById('player');
+          videoElement.src = data.streamUrl;
+
+          if (!plyrInstance) {
+            plyrInstance = new Plyr('#player');
+          }
+        }
+      } catch (err) {
+        btnText.innerText = "Process";
+        status.innerText = "Network Error: Unable to communicate with parsing API.";
+      }
+    }
+  </script>
+</body>
+</html>
