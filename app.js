@@ -94,7 +94,7 @@ form.addEventListener('submit', async event => {
   try {
     const response = await fetch('/api/parse', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url }), signal: controller.signal, cache: 'no-store',
+      body: JSON.stringify({ url }), signal: controller.signal, cache: 'no-store', redirect: 'error',
     });
     if (!response.headers.get('content-type')?.includes('application/json')) {
       throw new Error('The video service isn’t available on this deployment. The site owner needs to deploy the API, not just the webpage.');
@@ -162,13 +162,16 @@ downloadBtn.addEventListener('click', async event => {
   message('Checking the download link…', 'loading');
   try {
     // Check failures without navigating the user to a JSON/error page.
-    const response = await fetch(current.downloadUrl, { method: 'HEAD', cache: 'no-store', signal: controller.signal });
+    const response = await fetch(current.downloadUrl, { method: 'HEAD', cache: 'no-store', signal: controller.signal, redirect: 'error' });
     if (version !== generation) return;
     if (!response.ok) {
       // HEAD has no body, so do not attempt response.json().
       throw new Error(response.status === 410
         ? 'This link expired. Get the video again to download it.'
         : 'The download isn’t available right now. Get the video again, or try another share.');
+    }
+    if (!response.headers.get('content-disposition')?.startsWith('attachment;')) {
+      throw new Error('The download service didn’t return a file. No extra page was opened. Please try again later.');
     }
     const anchor = document.createElement('a');
     anchor.href = current.downloadUrl;

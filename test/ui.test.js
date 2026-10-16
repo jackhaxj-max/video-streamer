@@ -177,7 +177,7 @@ test('download errors leave the visitor on the same page and never follow an err
   } finally { ui.close(); }
 });
 test('a checked download uses a same-origin attachment without new tabs', async () => {
-  const ui = setup(async (_url, options) => options.method === 'POST' ? reply(small) : { ok: true, status: 200 });
+  const ui = setup(async (_url, options) => options.method === 'POST' ? reply(small) : { ok: true, status: 200, headers: new Map([['content-disposition', 'attachment; filename=video.mp4']]) });
   let attachment;
   ui.window.HTMLAnchorElement.prototype.click = function () { attachment = { href: this.href, name: this.download, target: this.target }; };
   try {
@@ -200,5 +200,17 @@ test('late player failures cannot repopulate a cleared page', async () => {
     rejectPlayback(new Error('late failure')); await tick();
     assert.equal(ui.get('status').hidden, true);
     assert.equal(ui.get('result').hidden, true);
+  } finally { ui.close(); }
+});
+
+test('an HTML/login fallback with HTTP 200 is not treated as a downloadable video', async () => {
+  const ui = setup(async (_url, options) => options.method === 'POST' ? reply(small) : { ok: true, status: 200, headers: new Map([['content-type', 'text/html']]) });
+  let navigations = 0;
+  ui.window.HTMLAnchorElement.prototype.click = () => { navigations++; };
+  try {
+    ui.submit(); await tick();
+    ui.get('downloadBtn').dispatchEvent(new ui.window.MouseEvent('click', { bubbles: true, cancelable: true })); await tick();
+    assert.equal(navigations, 0);
+    assert.match(ui.get('status').textContent, /No extra page was opened/);
   } finally { ui.close(); }
 });

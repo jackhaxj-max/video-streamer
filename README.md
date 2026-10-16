@@ -98,8 +98,9 @@ The included `vercel.json` explicitly builds just the browser assets into `publi
 2. In Vercel, use the repository root as **Root Directory**, **Other** as the framework preset, `npm run build` as the build command, and `public` as the output directory. Remove dashboard overrides that conflict with the checked-in configuration. Use a supported Node 22+ runtime.
 3. Add a high-entropy `MEDIA_TOKEN_SECRET` to the intended Preview/Production environment using Vercel's environment-variable settings. Set any authorized provider resolver URLs/keys there as well, never in the public files.
 4. Trigger a new deployment from the updated code. Redeploying the original commit will retain the original missing API.
-5. Open `/api/parse` directly. A **405 JSON** response (`Use POST with a JSON share URL.`) means the route exists and expects POST. A **404**, HTML document, or the old “Video Utility Prototype” homepage means the new app is not the deployment being served.
-6. Test the form. A structured resolver/provider error is a different issue from a missing API route and must not be treated as successful link conversion. The >1 GB media-delivery limitations discussed above still apply on Vercel.
+5. The app has no login. If the preview redirects to a Vercel login **before** loading the app, that is the project's **Deployment Protection**, not application authentication. Adjust that policy for the intended public environment in Vercel settings. Never put protection-bypass tokens in browser code.
+6. Open `/api/parse` directly. A **405 JSON** response (`Use POST with a JSON share URL.`) means the route exists and expects POST. A **404**, HTML document, or the old “Video Utility Prototype” homepage means the new app is not the deployment being served.
+7. Test the form. A structured resolver/provider error is a different issue from a missing API route and must not be treated as successful link conversion. The >1 GB media-delivery limitations discussed above still apply on Vercel.
 
 The supplied Diskwala example's public page lists a 573.17 MB `video/x-matroska` file and directs users to the official app. This metadata alone is not a downloadable URL. An authorized resolver is still needed if no public media is exposed; even with a usable URL, browser support for Matroska depends on the browser and codecs. Download remains the fallback.
 
