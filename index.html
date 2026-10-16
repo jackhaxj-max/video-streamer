@@ -1,97 +1,68 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Video Utility Prototype</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
-  <script src="https://cdn.plyr.io/3.7.8/plyr.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="Paste a Diskwala or Terabox share link. Choose online playback or download. No account, bots, or saved watch history.">
+  <title>Linkplay — A link. A video. Nothing else.</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" defer></script>
 </head>
-<body class="bg-slate-900 text-white min-h-screen flex flex-col items-center justify-center p-4">
-
-  <div class="max-w-xl w-full bg-slate-800 p-6 rounded-xl shadow-lg border border-slate-700">
-    <h1 class="text-2xl font-bold mb-4 text-center">Media Link Extractor</h1>
-
-    <!-- Input Form -->
-    <div class="flex gap-2 mb-6">
-      <input id="linkInput" type="text" placeholder="Paste link here..." 
-             class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500">
-      <button onclick="extractLink()" id="btnText" 
-              class="bg-blue-600 hover:bg-blue-700 font-semibold px-5 py-2 rounded-lg transition">
-        Process
-      </button>
-    </div>
-
-    <!-- Status Output -->
-    <div id="status" class="text-center text-sm text-slate-400 mb-4 hidden"></div>
-
-    <!-- Video Container (Files <= 1GB) -->
-    <div id="playerWrapper" class="hidden mb-4">
-      <video id="player" controls crossorigin playsinline class="w-full rounded-lg"></video>
-    </div>
-
-    <!-- Direct Download Button (Files > 1GB or Override) -->
-    <div id="downloadWrapper" class="hidden text-center">
-      <p class="text-amber-400 text-sm mb-2">File exceeds 1 GB limit. Direct stream disabled.</p>
-      <a id="downloadBtn" href="#" target="_blank" rel="noopener noreferrer" 
-         class="inline-block bg-emerald-600 hover:bg-emerald-700 font-bold px-6 py-3 rounded-lg text-white transition">
-        Download Direct File
-      </a>
-    </div>
+<body>
+  <svg class="icon-library" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="m9 5 11 7-11 7z"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24"><path d="m10 13 4-4m-6 6-1 1a4 4 0 0 1-6-6l4-4a4 4 0 0 1 6 0m2 0 1-1a4 4 0 0 1 6 6l-4 4a4 4 0 0 1-6 0"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6zm-4 9 3 3 5-6"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+  </svg>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand" aria-label="Linkplay"><span class="brand-icon"><svg class="icon filled" aria-hidden="true"><use href="#i-play"/></svg></span>linkplay<span class="brand-period">.</span></div>
+      <span class="private-badge"><span class="dot"></span> No sign-in. Ever.</span>
+    </header>
+    <main>
+      <section class="intro" aria-labelledby="pageTitle">
+        <p class="eyebrow"><span></span> JUST THE VIDEO. NOTHING ELSE.</p>
+        <h1 id="pageTitle">Your video.<br><span>Without the detour.</span></h1>
+        <p class="intro-copy">One link. Watch it here or take it with you.<br>No accounts, bots, popups, or extra pages.</p>
+      </section>
+      <section class="card" aria-label="Video link tool">
+        <div class="card-heading"><h2>Play & download</h2><div class="providers" aria-label="Supported providers"><span><b class="provider-mark disk">D</b>Diskwala</span><span><b class="provider-mark tera">T</b>Terabox</span></div></div>
+        <form id="linkForm">
+          <label for="linkInput">Paste your video link</label>
+          <div class="input-row"><div class="input-wrap"><svg class="icon" aria-hidden="true"><use href="#i-link"/></svg><input id="linkInput" type="url" inputmode="url" required maxlength="4096" placeholder="https://www.diskwala.com/app/…" autocomplete="off" autocapitalize="off" spellcheck="false" aria-describedby="linkHint"></div><button id="processBtn" type="submit"><span>Get video</span><svg class="icon" aria-hidden="true"><use href="#i-arrow"/></svg></button></div>
+          <div class="form-footnote"><p id="linkHint">Diskwala & Terabox share links. Public videos only.</p><button id="cancelBtn" type="button" class="subtle" hidden>Cancel</button></div>
+        </form>
+        <div id="status" role="status" aria-live="polite" aria-atomic="true" hidden></div>
+        <section id="result" class="result" aria-label="Your video" hidden>
+          <div class="file-row"><span class="file-icon"><svg class="icon filled" aria-hidden="true"><use href="#i-play"/></svg></span><div class="file-detail"><h3 id="filename"></h3><p id="fileMeta"></p></div><button id="resetBtn" type="button" class="subtle" aria-label="Clear video and start again">Clear <svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button></div>
+          <p id="sizeNotice" class="notice"></p>
+          <div class="actions"><button id="streamBtn" type="button"><svg class="icon filled" aria-hidden="true"><use href="#i-play"/></svg><span>Stream online</span></button><a id="downloadBtn" class="button secondary" download><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg><span>Download video</span></a></div>
+        </section>
+        <section id="playerWrapper" class="player-wrapper" aria-label="Video player" hidden>
+          <div class="player-heading"><span><span class="dot"></span> YOUR VIDEO</span><button id="exitBtn" type="button" class="subtle">Exit & clear <svg class="icon" aria-hidden="true"><use href="#i-close"/></svg></button></div>
+          <video id="player" controls playsinline preload="none"></video>
+          <p class="player-hint">Playback depends on your browser and the file format. If it won’t play, download instead.</p>
+        </section>
+        <div class="card-bottom"><svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg><span>No saved links. No watch history. Yours stays yours.</span></div>
+      </section>
+      <section class="instructions" aria-labelledby="instructionsTitle">
+        <h2 id="instructionsTitle">THREE STEPS. ZERO DETOURS.</h2>
+        <ol>
+          <li><span class="step-number">1</span><div><h3>Paste a share link</h3><p>Copy a video link from <br>Diskwala or Terabox.</p></div></li>
+          <li><span class="step-number">2</span><div><h3>Choose your way</h3><p>Stream up to 1 GB. <br>Larger files: download only.</p></div></li>
+          <li><span class="step-number">3</span><div><h3>Exit. Start fresh.</h3><p>Exit & clear resets everything. <br>Nothing is saved here.</p></div></li>
+        </ol>
+      </section>
+      <p class="availability-note">Some shares are restricted by their host. We’ll tell you if a video can’t be opened here.</p>
+      <noscript><p class="notice">Enable JavaScript to process a video link. No account is needed.</p></noscript>
+    </main>
+    <footer><span>A link. A video. Nothing else.</span><span>Only access videos you own or have permission to use.</span></footer>
   </div>
-
-  <script>
-    let plyrInstance = null;
-
-    async function extractLink() {
-      const input = document.getElementById('linkInput').value.trim();
-      const status = document.getElementById('status');
-      const playerWrapper = document.getElementById('playerWrapper');
-      const downloadWrapper = document.getElementById('downloadWrapper');
-      const btnText = document.getElementById('btnText');
-
-      if (!input) return alert("Please enter a link!");
-
-      // Reset state
-      status.classList.remove('hidden');
-      status.innerText = "Extracting video stream... Please wait.";
-      playerWrapper.classList.add('hidden');
-      downloadWrapper.classList.add('hidden');
-      btnText.innerText = "Loading...";
-
-      try {
-        const response = await fetch(`/api/parse?url=${encodeURIComponent(input)}`);
-        const data = await response.json();
-
-        btnText.innerText = "Process";
-
-        if (!data.success || !data.streamUrl) {
-          status.innerText = "Error: " + (data.error || "Unable to extract stream URL.");
-          return;
-        }
-
-        status.innerText = `Success! Detected size: ${data.sizeInMB ? data.sizeInMB + ' MB' : 'Unknown'}`;
-
-        if (data.isLargeFile) {
-          // File > 1 GB: Show download button
-          downloadWrapper.classList.remove('hidden');
-          document.getElementById('downloadBtn').href = data.streamUrl;
-        } else {
-          // File <= 1 GB: Load into HTML5 Player
-          playerWrapper.classList.remove('hidden');
-          const videoElement = document.getElementById('player');
-          videoElement.src = data.streamUrl;
-
-          if (!plyrInstance) {
-            plyrInstance = new Plyr('#player');
-          }
-        }
-      } catch (err) {
-        btnText.innerText = "Process";
-        status.innerText = "Network Error: Unable to communicate with parsing API.";
-      }
-    }
-  </script>
 </body>
 </html>
